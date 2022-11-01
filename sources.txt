@@ -1,0 +1,2 @@
+https://gist.github.com/robinkraft/c6de2f988c9d3f01af3c - projecting area using lat/long coords
+https://public.opendatasoft.com/explore/dataset/us-county-boundaries/table/?disjunctive.statefp&disjunctive.countyfp&disjunctive.name&disjunctive.namelsad&disjunctive.stusab&disjunctive.state_name - for county geographical dataset
