@@ -1,4 +1,8 @@
 constants.py
 api_key.py
-
 .env
+**/*.jpg
+*.jpg
+**/*.png
+*.png
+
