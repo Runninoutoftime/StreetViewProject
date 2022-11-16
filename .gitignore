@@ -6,3 +6,5 @@ api_key.py
 **/*.png
 *.png
 
+streetview_images/*
+panorama_images/*

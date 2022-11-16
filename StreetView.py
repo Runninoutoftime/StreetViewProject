@@ -5,15 +5,43 @@ from PIL import Image
 from imutils import paths
 import numpy as np
 import cv2
-import os
-
+import pandas
 class StreetView:
 
-    def __init__(self, api_key, streetview_folder, panorama_folder):
+    def __init__(self, api_key, streetview_folder, panorama_folder, coordinate_file):
+        """Init
+
+        Args:
+            api_key (string): API Key from Google Cloud Platform for the Maps Street View API
+            streetview_folder (string): Folder to save the individual street view images to
+            panorama_folder (string): Folder to save the stitched together street view images to
+        """
+
         self.api_key = api_key
         self.streetview_folder = streetview_folder
         self.panorama_folder = panorama_folder
+        self.coordinate_file = coordinate_file
+        self.coordinate_array = self.parse_csv()
 
+    def parse_csv(self):
+
+        df = pandas.read_csv(self.coordinate_file)
+        
+        # Get all the x, y values from the dataframe
+        x_values = df['x'].values
+        # Get all the y values from the dataframe
+        y_values = df['y'].values
+        # Create a list of all the coordinates
+        coordinate_array = []
+
+        for i in range(len(x_values)):
+            coordinate_array.append([x_values[i], y_values[i]])
+
+
+        # Testing on a small subset of coordinates to avoid using all API credit
+        coordinate_array = coordinate_array[:len(coordinate_array) - (len(coordinate_array) - 8)]
+        return coordinate_array
+        
     def get_images(self, lat, lon):
         """Given a latitude and longitude, get the street view images and save them to a folder
 
@@ -25,7 +53,7 @@ class StreetView:
         # Loads the API key from the .env file
         load_dotenv()
 
-    # Define parameters for street view api
+        # Define parameters for street view api
         params = {
             'size': '640x640', # max 640x640 pixels
             'location': str(lat) + ', ' + str(lon),
@@ -127,3 +155,12 @@ class StreetView:
             # cv2.waitKey('q')
         else:
             print("error with stitching")
+
+    def process_coordinates(self):
+
+        for coordinate in self.coordinate_array:
+            # print(coordinate[0], coordinate[1])
+            self.get_images(coordinate[1], coordinate[0])
+            coordinate_images_path = self.streetview_folder + '/' + str(coordinate[1]).replace('.', '') + '_' + str(coordinate[0]).replace('.', '')
+            # print(coordinate_images_path)
+            self.stitch_images(coordinate_images_path, coordinate[1], coordinate[0])
