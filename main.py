@@ -12,17 +12,8 @@ panorama_folder = 'panorama_images'
 coordinate_file = 'test_data.csv'
 
 streetview_obj = StreetView(api_key, streetview_folder, panorama_folder, coordinate_file)
-
+# This one function will get all the images and stitch them together for a list of coordinates
 streetview_obj.process_coordinates()
 
-# streetview_obj.parse_csv()    
+# print(api_key)
 
-print(api_key)
-
-# list_of_coordinates = [[33.933208, -83.382564], [33.939153, -83.386615], [33.934710, -83.370456], [33.956412, -83.381247]]
-
-# for coordinate in list_of_coordinates:
-#     streetview_obj.get_images(coordinate[0], coordinate[1])
-#     coordinate_images_path = streetview_obj.streetview_folder + '/' + str(coordinate[0]).replace('.', '') + '_' + str(coordinate[1]).replace('.', '')
-#     # print(coordinate_images_path)
-#     streetview_obj.stitch_images(coordinate_images_path, coordinate[0], coordinate[1])
