@@ -1,70 +1,84 @@
+import random
 import torch
 from torchvision.models import ResNet50_Weights, resnet50
-from torchvision.models.resnet import BasicBlock, Bottleneck
 from PIL import Image
 from torchvision import transforms
 from imutils import paths
 from pytorch_grad_cam import GradCAM, HiResCAM, ScoreCAM, GradCAMPlusPlus, AblationCAM, XGradCAM, EigenCAM, FullGrad
-from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
-from pytorch_grad_cam.utils.image import show_cam_on_image, preprocess_image
-from pytorch_grad_cam import DeepFeatureFactorization
-from pytorch_grad_cam.utils.image import show_factorization_on_image
 import numpy as np
-import requests
+from matplotlib import pyplot as plt
 import cv2
+from torchvision.models.feature_extraction import get_graph_node_names, create_feature_extractor
+import seaborn as sns
+from render import show_images
+from image_utils import center_crop, resize_shortest_edge
 
 # Load the pretrained resnet model
 weights = ResNet50_Weights.DEFAULT
 model = resnet50(weights=weights)
-model.fc = torch.nn.Identity()
 
-# Grad cam setup
-target_layers = [model.layer4[-1]]
-cam = GradCAM(model=model, target_layers=target_layers, use_cuda=False) # Change if on GPU
-targets = [ClassifierOutputTarget(281)] # What does this 281 do lol?
 
 
 # Image preprocessing
 preprocess = transforms.Compose([
-    transforms.Resize(256),
-    transforms.CenterCrop(224),
+    transforms.Resize(384),
+    transforms.CenterCrop(384),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
+test_img = preprocess(Image.open('/Users/will/StreetViewProject/panorama_images/33960272_-83296329.jpg')).unsqueeze(0)
 
-# Based on:
-# https://stackoverflow.com/a/62118437
-def get_features(input_image):
-    """Get the features of an image
+train_nodes, eval_nodes = get_graph_node_names(model)
+assert([t == e for t, e in zip(train_nodes, eval_nodes)])
+# print(train_nodes)
 
-    Args:
-        input_image (string): The path to the image to get features from
+return_nodes = ['layer1', 'layer2', 'layer3', 'layer4']
 
-    Returns:
-        tensor(float[1, 2048]): A tensor of size 1x2048 containing the features of the image
-    """
-    input_image = Image.open(input_image)
-    input_tensor = preprocess(input_image)
-    input_batch = input_tensor.unsqueeze(0) # create a mini-batch as expected by the model
-    features = model(input_batch)
-    print(features[0])#[1..]) # Features is a 1x2048 tensor
-    return features
+feature_extractor = create_feature_extractor(model, return_nodes)
 
-def eval_images(image_folder):
-    """Evaluate a folder of images and return a list of features
+with torch.no_grad():
+    out = feature_extractor(preprocess(Image.open('/Users/will/StreetViewProject/panorama_images/33960272_-83296329.jpg')).unsqueeze(0))
 
-    Args:
-        image_folder (string): The folder containing images to evaluate
-    """
-    imagePaths = sorted(list(paths.list_images(image_folder)))
-    images = []
+imagePaths = sorted(list(paths.list_images('/Users/will/StreetViewProject/panorama_images')))
 
-    for imagePath in imagePaths:
-        get_features(imagePath)
-    
+imgs = []
+for imagePath in imagePaths:
+    img = cv2.imread(imagePath)[..., ::-1]
+    img = resize_shortest_edge(img, 384, interpolation='auto')
+    img = center_crop(img, (384, 384))
+    imgs.append(img)
 
+# show_images(imgs, per_row=5, imsize=(5, 5))
 
-eval_images('/Users/will/StreetViewProject/panorama_images')
+from prepare_input import prepare
+
+inps = [prepare(img, [0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) for img in imgs]
+
+with torch.no_grad():
+    out = torch.softmax(model(inps[0]), -1)[0].numpy()
 
 
+return_nodes = ['layer1', 'layer2', 'layer3', 'layer4']
+
+feat_ext = create_feature_extractor(model, return_nodes=return_nodes)
+
+with torch.no_grad():
+    out = feat_ext(inps[0])
+
+fig, ax = plt.subplots(4, 5, figsize=(25, 20))
+
+# Pick 4 random feature maps from each layer
+for i, layer in enumerate(return_nodes):
+    feat_maps = out[layer].numpy().squeeze(0)
+    # print(list(feat_maps)[0])
+    feat_maps = random.sample(list(feat_maps), 4)
+    ax[i][0].imshow(imgs[0])
+    ax[i][0].set_xticks([])
+    ax[i][0].set_yticks([])
+    for j, feat_map in enumerate(feat_maps):
+        sns.heatmap(feat_map, ax=ax[i][j+1], cbar=False)
+        ax[i][j+1].set_xticks([])
+        ax[i][j+1].set_yticks([])
+        ax[i][j+1].set_title(f'{layer}: ({feat_map.shape[0]} x {feat_map.shape[1]})')
+plt.show()
