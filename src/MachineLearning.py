@@ -69,7 +69,7 @@ def create_heatmap(outs, imgs, show_heatmap):
 
 def get_images(path):
     """
-    Processes the images in the path and returns a list of processed images
+    Processes the images in the given folder and returns a list of processed images
     """
     imagePaths = sorted(list(paths.list_images(path)))
     
@@ -87,10 +87,10 @@ def get_images(path):
     return images, showableImgs
 
 
-# Example use
-imgFolder = '/Users/will/StreetViewProject/streetview_images/3392401699999999_-83259033'
-imgs, showableImages = get_images(imgFolder)
-feats, imgs = get_features(imgs)
-create_heatmap(feats, showableImages, True)
-# print(feats[0]['layer4'].shape)
-# Each feature is a (1x2048x9x9) tensor
+# # Example use
+# imgFolder = '/Users/will/StreetViewProject/streetview_images/3392401699999999_-83259033'
+# imgs, showableImages = get_images(imgFolder)
+# feats, imgs = get_features(imgs)
+# create_heatmap(feats, showableImages, True)
+# print(feats[0]['layer4'])
+# # Each feature is a (1x2048x9x9) tensor
