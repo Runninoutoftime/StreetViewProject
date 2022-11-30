@@ -1,1 +1,3 @@
 constants.py
+**/full_state.json
+*.pyc
