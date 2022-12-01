@@ -8,3 +8,5 @@ api_key.py
 
 streetview_images/*
 panorama_images/*
+**/full_state.json
+*.pyc
